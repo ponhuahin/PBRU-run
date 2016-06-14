@@ -7,20 +7,37 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
 
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+import com.squareup.picasso.Picasso;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
     private MyManage myManage;
     private static final String urlJSON = "http://swiftcodingthai.com/pbru3/get_user.php";
+    private EditText userEditText, passwordEditText;
+    private ImageView imageView;
+    private static final String urlLogo = "http://swiftcodingthai.com/pbru3/logo_pbru.png";
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //Bind Widget
+        userEditText = (EditText) findViewById(R.id.editText4);
+        passwordEditText = (EditText) findViewById(R.id.editText5);
+        imageView = (ImageView) findViewById(R.id.imageView6);
+
+        //Load Logo From Server
+        Picasso.with(this).load(urlLogo).resize(150,180).into(imageView);
 
         myManage = new MyManage(this);
 
@@ -54,6 +71,27 @@ public class MainActivity extends AppCompatActivity {
             super.onPostExecute(s);
 
             Log.d("pbruV2", "JSON ==>" + s);
+
+            try {
+                JSONArray jsonArray = new JSONArray(s);
+                for (int i=0;i<jsonArray.length();i++) {
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+                    String strId = jsonObject.getString("id");
+                    String strName = jsonObject.getString("Name");
+                    String strUser = jsonObject.getString("User");
+                    String strPass = jsonObject.getString("Password");
+                    String strAvata = jsonObject.getString("Avata");
+                    String strGold = jsonObject.getString("Gold");
+
+                    myManage.addNewUser(strId, strName, strUser, strPass, strAvata, strGold);
+
+
+
+                }//for
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
