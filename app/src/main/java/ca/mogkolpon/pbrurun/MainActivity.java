@@ -3,12 +3,13 @@ package ca.mogkolpon.pbrurun;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -19,12 +20,14 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
+
+    //Explicit
     private MyManage myManage;
     private static final String urlJSON = "http://swiftcodingthai.com/pbru3/get_user.php";
     private EditText userEditText, passwordEditText;
     private ImageView imageView;
     private static final String urlLogo = "http://swiftcodingthai.com/pbru3/logo_pbru.png";
-
+    private String userString, passwordString;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,19 +42,68 @@ public class MainActivity extends AppCompatActivity {
         //Load Logo From Server
         Picasso.with(this).load(urlLogo).resize(150,180).into(imageView);
 
+        //Request SQLite
         myManage = new MyManage(this);
 
-       // myManage.addNewUser("1", "name", "user", "pass", "0", "1");
+        //myManage.addNewUser("1", "name", "user", "pass", "0", "1");
 
         deleteAllSQLite();
+
         ConnectedServer connectedServer = new ConnectedServer();
         connectedServer.execute();
-    } //Main Method
+
+    }   // Main Method
+
+    public void clickSignIn(View view) {
+
+        userString = userEditText.getText().toString().trim();
+        passwordString = passwordEditText.getText().toString().trim();
+
+        if (userString.equals("") || passwordString.equals("")) {
+            Toast.makeText(this, "มีช่องว่าง กรุณากรอกทุกช่อง คะ", Toast.LENGTH_SHORT).show();
+        } else {
+            searchMyUser();
+        }
+
+    }   // clickSignIn
+
+    private void searchMyUser() {
+
+        try {
+
+            String[] resultStrings = myManage.searchUser(userString);
+
+            if (passwordString.equals(resultStrings[3])) {
+
+                Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+                intent.putExtra("Login", resultStrings);
+                startActivity(intent);
+
+                Toast.makeText(this, "Welcome " + resultStrings[1], Toast.LENGTH_SHORT).show();
+
+                finish();
+
+            } else {
+                Toast.makeText(this, "Password False", Toast.LENGTH_SHORT).show();
+            }
+
+
+        } catch (Exception e) {
+            Toast.makeText(this,"ไม่มี " + userString+ " ในฐานข้อมูลของเรา",
+                    Toast.LENGTH_SHORT).show();
+        }
+
+
+    }   // searchMyUser
+
 
     private class ConnectedServer extends AsyncTask<Void, Void, String> {
+
         @Override
-        protected String doInBackground(Void... params) {
+        protected String doInBackground(Void... voids) {
+
             try {
+
                 OkHttpClient okHttpClient = new OkHttpClient();
                 Request.Builder builder = new Request.Builder();
                 Request request = builder.url(urlJSON).build();
@@ -63,18 +115,19 @@ public class MainActivity extends AppCompatActivity {
                 return null;
             }
 
-
-        }//doInBack
+        }   // doInBack
 
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
 
-            Log.d("pbruV2", "JSON ==>" + s);
+            Log.d("pbruV2", "JSON ==> " + s);
 
             try {
+
                 JSONArray jsonArray = new JSONArray(s);
-                for (int i=0;i<jsonArray.length();i++) {
+                for (int i = 0; i < jsonArray.length(); i++) {
+
                     JSONObject jsonObject = jsonArray.getJSONObject(i);
                     String strId = jsonObject.getString("id");
                     String strName = jsonObject.getString("Name");
@@ -83,33 +136,31 @@ public class MainActivity extends AppCompatActivity {
                     String strAvata = jsonObject.getString("Avata");
                     String strGold = jsonObject.getString("Gold");
 
-                    myManage.addNewUser(strId, strName, strUser, strPass, strAvata, strGold);
+                    myManage.addNewUser(strId, strName, strUser,
+                            strPass, strAvata, strGold);
 
 
+                }   // for
 
-                }//for
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
+
+
+        }   // onPost
     }
-
-
 
 
     private void deleteAllSQLite() {
+
         SQLiteDatabase sqLiteDatabase = openOrCreateDatabase(MyOpenHelper.database_name,
-                MODE_PRIVATE,null);
+                MODE_PRIVATE, null);
         sqLiteDatabase.delete(MyManage.user_table, null, null);
-
-
     }
-
 
     public void clickSignUpMain(View view) {
         startActivity(new Intent(MainActivity.this, SignUpActivity.class));
-
     }
 
-} //Main Class
+}   // Main Class
